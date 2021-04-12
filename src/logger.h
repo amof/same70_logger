@@ -1,34 +1,67 @@
-/**
- * Copyright (c) 2020 rxi
- *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the MIT license. See `log.c` for details.
+/** 
+ *  @file
+ *  @defgroup logger Logger library
+ *  @code #include <logger.h> @endcode
+ *  @brief Logger library
+ *         Based on rxi library: https://github.com/rxi/log.c/
+ *         Use macros (log_x) to use this logger.
+ *  @date 2019-03-22
+ *  @author Julien DELVAUX <delvaux.ju@gmail.com>
+ *  @copyright MIT license
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef LOGGER_H_
+#define LOGGER_H_
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
-#include <stdbool.h>
-#include <time.h>
+#include <stdio.h>
+#include <string.h>
 
-#define LOG_VERSION "0.1.0"
+#if defined(TEST)
+#  include <stdint.h>
+#else
+#  include "compiler.h"
+#  include "conf_board.h"
+#endif
 
-typedef struct {
-  va_list ap;
-  const char *fmt;
-  const char *file;
-  struct tm *time;
-  void *udata;
-  int line;
-  int level;
-} log_Event;
+/*
+   ---------------------------------------
+   ---------- Logger options ----------
+   ---------------------------------------
+*/
 
-typedef void (*log_LogFn)(log_Event *ev);
-typedef void (*log_LockFn)(bool lock, void *udata);
+//! Log levels values possible
+typedef enum {
+   LOG_INTERFACE_SERIAL,
+   LOG_INTERFACE_ETHERNET,
+   LOG_INTERFACE_BOTH
+} log_interface_t;
 
-enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
+//! Log levels values possible
+typedef enum {
+   LOG_TRACE, 
+   LOG_DEBUG, 
+   LOG_INFO, 
+   LOG_WARN, 
+   LOG_ERROR, 
+   LOG_FATAL
+} log_level_t;
+
+// Define if you want to use a more verbose option
+#define ADVANCED_LOG
+// Define the buffer length
+#if defined(TEST)
+#  define LOGGER_MESSAGE_MAX_LENGTH 255
+#else
+#  define LOGGER_MESSAGE_MAX_LENGTH 100
+#endif
+
+/*
+   ---------------------------------------
+   --------- Logger functions ---------
+   ---------------------------------------
+*/
 
 #define log_trace(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
 #define log_debug(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
@@ -37,13 +70,12 @@ enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 #define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-const char* log_level_string(int level);
-void log_set_lock(log_LockFn fn, void *udata);
-void log_set_level(int level);
-void log_set_quiet(bool enable);
-int log_add_callback(log_LogFn fn, void *udata, int level);
-int log_add_fp(FILE *fp, int level);
 
-void log_log(int level, const char *file, int line, const char *fmt, ...);
+extern void logger_init(log_level_t log_level);
+extern void logger_set_log_level(log_level_t log_level);
+extern void logger_set_log_interface(log_interface_t log_interface);
+extern char * log_buffer(uint8_t *p_buff, uint8_t buffer_length);
+extern void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt, ...) __attribute__ ((format (gnu_printf, 4, 5)));
+extern uint8_t logger_get_log_level();
 
-#endif
+#endif /* LOGGER_H_ */

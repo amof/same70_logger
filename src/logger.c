@@ -1,168 +1,151 @@
-/*
- * Copyright (c) 2020 rxi
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
+#include "logger.h"
+
+// Serial includes
+#include "sam_ethernet.h"
+#include "serial_mdw.h"
+#include "delay.h"
+
+// Ethernet includes
+
+const static uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
+const static uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
+static log_level_t logger_log_level = LOG_DEBUG;
+static log_level_t logger_log_interface = LOG_INTERFACE_SERIAL;
+static const char *level_names[] = {
+	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
+
+/**
+ * @brief Initialize the logger on the interface (depending of the define used)
+ * @ingroup logger
+ * @param[in] log_level Log level to output message
  */
-
-#include "log.h"
-
-#define MAX_CALLBACKS 32
-
-typedef struct {
-  log_LogFn fn;
-  void *udata;
-  int level;
-} Callback;
-
-static struct {
-  void *udata;
-  log_LockFn lock;
-  int level;
-  bool quiet;
-  Callback callbacks[MAX_CALLBACKS];
-} L;
-
-
-static const char *level_strings[] = {
-  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
-};
-
-#ifdef LOG_USE_COLOR
-static const char *level_colors[] = {
-  "\x1b[94m", "\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m", "\x1b[35m"
-};
-#endif
-
-
-static void stdout_callback(log_Event *ev) {
-  char buf[16];
-  buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
-#ifdef LOG_USE_COLOR
-  fprintf(
-    ev->udata, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
-    buf, level_colors[ev->level], level_strings[ev->level],
-    ev->file, ev->line);
-#else
-  fprintf(
-    ev->udata, "%s %-5s %s:%d: ",
-    buf, level_strings[ev->level], ev->file, ev->line);
-#endif
-  vfprintf(ev->udata, ev->fmt, ev->ap);
-  fprintf(ev->udata, "\n");
-  fflush(ev->udata);
+void logger_init(log_level_t log_level)
+{
+    logger_log_level = log_level;
+	#if !defined(TEST)
+	// Initialize serial interface
+	const usart_serial_options_t serial_option = {
+		.baudrate = LOGGER_SERIAL_SPEED,
+		.charlength = US_MR_CHRL_8_BIT,
+		.paritytype = US_MR_PAR_NO,
+		.stopbits = US_MR_NBSTOP_1_BIT
+	};
+	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
+	#endif
 }
 
-
-static void file_callback(log_Event *ev) {
-  char buf[64];
-  buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
-  fprintf(
-    ev->udata, "%s %-5s %s:%d: ",
-    buf, level_strings[ev->level], ev->file, ev->line);
-  vfprintf(ev->udata, ev->fmt, ev->ap);
-  fprintf(ev->udata, "\n");
-  fflush(ev->udata);
+/**
+ * @brief Change the log level
+ * @ingroup logger
+ * @param[in] log_level_t
+ */
+void logger_set_log_level(log_level_t log_level)
+{
+	logger_log_level = log_level;
 }
 
-
-static void lock(void)   {
-  if (L.lock) { L.lock(true, L.udata); }
+/**
+ * @brief Read the log level
+ * @ingroup logger
+ * @param[out] log_level_t
+ */
+uint8_t logger_get_log_level()
+{
+	return logger_log_level;
 }
 
-
-static void unlock(void) {
-  if (L.lock) { L.lock(false, L.udata); }
+/**
+ * @brief Change the interface to output logs
+ * @ingroup logger
+ * @param[in] log_interface_t 
+ */
+void logger_set_log_interface(log_interface_t log_interface)
+{
+	logger_log_interface = log_interface;
 }
 
+/**
+ * @brief Convert a uint8_t buffer into decimal character
+ * @ingroup logger
+ * @param[in] p_buff Pointer to the buffer of data
+ * @param[in] buffer_length Length of the buffer
+ * @return char* String of characters
+ */
+char * log_buffer(uint8_t *p_buff, uint8_t buffer_length)
+{
+	uint8_t length = 0;
+    char *buffer = (char*) malloc(LOGGER_MESSAGE_MAX_LENGTH * sizeof(char));
 
-const char* log_level_string(int level) {
-  return level_strings[level];
+    length += snprintf(buffer + length, LOGGER_MESSAGE_MAX_LENGTH, "<");
+
+    for(uint8_t i=0; i<buffer_length; i++){
+        length += snprintf(buffer + length, LOGGER_MESSAGE_MAX_LENGTH, "%u:", *p_buff);
+		p_buff++;
+	}
+	if(buffer_length > 0)
+	{
+		length += snprintf(buffer + length, LOGGER_MESSAGE_MAX_LENGTH, "\b>");
+	}else
+	{
+		length += snprintf(buffer + length, LOGGER_MESSAGE_MAX_LENGTH, ">");
+	}
+	
+	return buffer;
 }
 
+/**
+ * @brief Generate the log message and send it to the interface defined (SERIAL_LOG, CONSOLE_LOG)
+ * 
+ */
+void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt, ...)
+{
+	if (level >= logger_log_level )
+	{
+		int length = 0;
+		char buffer [LOGGER_MESSAGE_MAX_LENGTH] ={0};
+		va_list args;
 
-void log_set_lock(log_LockFn fn, void *udata) {
-  L.lock = fn;
-  L.udata = udata;
-}
+		va_start(args, fmt);
+		length = vsnprintf(buffer, LOGGER_MESSAGE_MAX_LENGTH, fmt, args);
+		va_end (args);
+		
+		#if defined(ADVANCED_LOG)
+			char output_message[LOGGER_MESSAGE_MAX_LENGTH]={0};
+			int length_advanced_log = 0;
+			length_advanced_log = snprintf(output_message, LOGGER_MESSAGE_MAX_LENGTH, "%-5s %s:%lu: ", level_names[level], file, line,fmt, args);
 
+			// Protection against length being > LOGGER_MESSAGE_MAX_LENGTH
+			if(	length_advanced_log >= 0 && 
+				(length + length_advanced_log <= LOGGER_MESSAGE_MAX_LENGTH))
+			{
+				length += length_advanced_log;
+				strncat(output_message, buffer, length_advanced_log + length);
+			}
+			else if	(length_advanced_log >= 0 && 
+					(length + length_advanced_log > LOGGER_MESSAGE_MAX_LENGTH))
+			{
+				// Restrain the size to LOGGER_MESSAGE_MAX_LENGTH - length preamble + length of data - 3 (indicate that there is more data but can't be displayed)  
+				strncat(output_message, buffer, LOGGER_MESSAGE_MAX_LENGTH - length + length_advanced_log - 3);
+				strncat(output_message, "...", LOGGER_MESSAGE_MAX_LENGTH);
+				length = LOGGER_MESSAGE_MAX_LENGTH;
+			}
+			memcpy(buffer, output_message, length);
+		#endif
 
-void log_set_level(int level) {
-  L.level = level;
-}
-
-
-void log_set_quiet(bool enable) {
-  L.quiet = enable;
-}
-
-
-int log_add_callback(log_LogFn fn, void *udata, int level) {
-  for (int i = 0; i < MAX_CALLBACKS; i++) {
-    if (!L.callbacks[i].fn) {
-      L.callbacks[i] = (Callback) { fn, udata, level };
-      return 0;
-    }
-  }
-  return -1;
-}
-
-
-int log_add_fp(FILE *fp, int level) {
-  return log_add_callback(file_callback, fp, level);
-}
-
-
-static void init_event(log_Event *ev, void *udata) {
-  if (!ev->time) {
-    time_t t = time(NULL);
-    ev->time = localtime(&t);
-  }
-  ev->udata = udata;
-}
-
-
-void log_log(int level, const char *file, int line, const char *fmt, ...) {
-  log_Event ev = {
-    .fmt   = fmt,
-    .file  = file,
-    .line  = line,
-    .level = level,
-  };
-
-  lock();
-
-  if (!L.quiet && level >= L.level) {
-    init_event(&ev, stderr);
-    va_start(ev.ap, fmt);
-    stdout_callback(&ev);
-    va_end(ev.ap);
-  }
-
-  for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++) {
-    Callback *cb = &L.callbacks[i];
-    if (level >= cb->level) {
-      init_event(&ev, cb->udata);
-      va_start(ev.ap, fmt);
-      cb->fn(&ev);
-      va_end(ev.ap);
-    }
-  }
-
-  unlock();
+		#if !defined(TEST)
+        if(logger_log_interface == LOG_INTERFACE_SERIAL || logger_log_interface == LOG_INTERFACE_BOTH)
+		{
+			if(length >= 0) serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t *)buffer, (uint32_t)length);
+			delay_ms(LOGGER_SERIAL_DELAY);
+			
+		}
+		if(logger_log_interface == LOG_INTERFACE_ETHERNET || logger_log_interface == LOG_INTERFACE_BOTH)
+		{
+			// TODO: after reflexion if UDP is used or not
+		}
+		#elif defined(TEST)
+			printf("%s\n",buffer, length);
+        #endif
+	}
+	 
 }
