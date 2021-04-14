@@ -76,6 +76,6 @@ extern void logger_set_log_level(log_level_t log_level);
 extern void logger_set_log_interface(log_interface_t log_interface);
 extern char * log_buffer(uint8_t *p_buff, uint8_t buffer_length);
 extern void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt, ...) __attribute__ ((format (gnu_printf, 4, 5)));
-extern uint8_t logger_get_log_level();
+extern uint8_t logger_get_log_level(void);
 
 #endif /* LOGGER_H_ */

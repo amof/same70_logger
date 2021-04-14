@@ -49,7 +49,7 @@ void logger_set_log_level(log_level_t log_level)
  * @ingroup logger
  * @param[out] log_level_t
  */
-uint8_t logger_get_log_level()
+uint8_t logger_get_log_level(void)
 {
 	return logger_log_level;
 }
