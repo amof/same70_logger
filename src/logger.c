@@ -7,8 +7,8 @@
 
 // Ethernet includes
 
-const static uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
-const static uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
+static const uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
+static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
 static log_level_t logger_log_level = LOG_DEBUG;
 static log_level_t logger_log_interface = LOG_INTERFACE_SERIAL;
 static const char *level_names[] = {
