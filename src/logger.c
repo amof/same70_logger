@@ -27,6 +27,7 @@ static uint16_t port = 10000;
 void logger_init(log_level_t log_level)
 {
     logger_log_level = log_level;
+	logger_log_interface = LOG_INTERFACE_BOTH;
 	#if !defined(TEST)
 	// Initialize serial interface
 	const usart_serial_options_t serial_option = {
