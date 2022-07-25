@@ -157,7 +157,7 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 		}
 		if(logger_log_interface == (log_interface_t) LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t) LOG_INTERFACE_BOTH)
 		{
-			// TODO: after reflexion if UDP is used or not
+			udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, port);
 		}
 		#elif defined(TEST)
 			printf("%s\n",buffer, length);
