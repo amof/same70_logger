@@ -17,7 +17,6 @@ static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
 static ip_addr_t ipaddr;
-static uint16_t port = 10000;
 
 /**
  * @brief Initialize the logger on the interface (depending of the define used)
@@ -39,7 +38,7 @@ void logger_init(log_level_t log_level)
 	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
 
 	// Initialize UDP client
-	IP4_ADDR(&ipaddr, 192, 168, 0, 101);
+	IP4_ADDR(&ipaddr, RPI_IP_ADDR_A, RPI_IP_ADDR_B, RPI_IP_ADDR_C, RPI_IP_ADDR_D);
 	init_ethernet();
 	udp_client_init();
 	#endif
@@ -158,7 +157,7 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 		}
 		if(logger_log_interface == (log_interface_t) LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t) LOG_INTERFACE_BOTH)
 		{
-			udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, port);
+			udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, RPI_PORT);
 		}
 		#elif defined(TEST)
 			printf("%s\n",buffer, length);
