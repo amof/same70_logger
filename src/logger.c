@@ -142,22 +142,21 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 		#endif
 
 		#if !defined(TEST)
-        if(logger_log_interface == (log_interface_t) LOG_INTERFACE_SERIAL || logger_log_interface == (log_interface_t) LOG_INTERFACE_BOTH)
-		{
-			if(length >= 0) {
-                serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t *)buffer, (uint32_t)length);
-                // Send a return carriage + new line only when using serial link
-                char returnToTheLine_buffer[2] = {'\r', '\n'};
-				serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t *)returnToTheLine_buffer, (uint32_t)2);
-            }
-            
-			delay_ms(LOGGER_SERIAL_DELAY);
-			
-		}
-		if(logger_log_interface == (log_interface_t) LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t) LOG_INTERFACE_BOTH)
-		{
-			udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, RPI_PORT);
-		}
+			if (length >= 0) {
+				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_SERIAL || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
+				{
+					serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t*)buffer, (uint32_t)length);
+					// Send a return carriage + new line only when using serial link
+					char returnToTheLine_buffer[2] = { '\r', '\n' };
+					serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t*)returnToTheLine_buffer, (uint32_t)2);
+					
+					delay_ms(LOGGER_SERIAL_DELAY);
+				}
+				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
+				{
+					udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, RPI_PORT);
+				}
+			}
 		#elif defined(TEST)
 			printf("%s\n",buffer, length);
         #endif
