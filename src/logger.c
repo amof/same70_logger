@@ -12,7 +12,7 @@
 static const uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
 static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
 static log_level_t logger_log_level = LOG_DEBUG;
-static log_interface_t logger_log_interface = LOG_INTERFACE_SERIAL;
+static log_interface_t logger_log_interface = LOG_INTERFACE_BOTH;
 static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
@@ -26,7 +26,6 @@ static ip_addr_t ipaddr;
 void logger_init(log_level_t log_level)
 {
     logger_log_level = log_level;
-	logger_log_interface = LOG_INTERFACE_BOTH;
 	#if !defined(TEST)
 	// Initialize serial interface
 	const usart_serial_options_t serial_option = {
