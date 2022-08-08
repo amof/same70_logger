@@ -11,7 +11,7 @@
 static const uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
 static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
 static log_level_t logger_log_level = LOG_DEBUG;
-static log_interface_t logger_log_interface = LOG_INTERFACE_BOTH;
+static log_interface_t logger_log_interface;
 static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
@@ -19,12 +19,13 @@ static ip_addr_t*  ip_addr;
 static uint16_t dest_port;
 
 /**
- * @brief Initialize the logger on the interface (depending of the define used)
+ * @brief Initialize the logger on the serial interface
  * @ingroup logger
  * @param[in] log_level Log level to output message
  */
-void logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
+void serial_logger_init(log_level_t log_level)
 {
+	logger_log_interface = LOG_INTERFACE_SERIAL;
     logger_log_level = log_level;
 	#if !defined(TEST)
 	// Initialize serial interface
@@ -35,13 +36,39 @@ void logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
 		.stopbits = US_MR_NBSTOP_1_BIT
 	};
 	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
+	#endif
+}
 
-	// Initialize UDP client
+/**
+*@brief Initialize the logger on the UDP interface
+* @ingroup logger
+* @param[in] log_level Log level to output message
+* @param[in] addr Destination IP adress
+* @param[in] port Destination port
+*/
+void udp_logger_init(log_level_t log_level, ip_addr_t * addr, u16_t port)
+{
+	logger_log_interface = LOG_INTERFACE_ETHERNET;
+	logger_log_level = log_level;
+
 	*ip_addr = *addr;
 	dest_port = port;
 	init_ethernet();
 	udp_client_init();
-	#endif
+}
+
+/**
+*@brief Initialize the logger on both interfaces
+* @ingroup logger
+* @param[in] log_level Log level to output message
+* @param[in] addr Destination IP adress
+* @param[in] port Destination port
+*/
+void both_logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
+{
+	serial_logger_init(log_level);
+	udp_logger_init(log_level, &addr, port);
+	logger_log_interface = LOG_INTERFACE_BOTH;
 }
 
 /**
