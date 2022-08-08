@@ -7,7 +7,6 @@
 
 // Ethernet includes
 #include "lib/network/udp_client/udp_client.h"
-#include "ip_addr.h"
 
 static const uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
 static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
@@ -16,14 +15,15 @@ static log_interface_t logger_log_interface = LOG_INTERFACE_BOTH;
 static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
-static ip_addr_t ipaddr;
+static ip_addr_t*  ip_addr;
+static uint16_t dest_port;
 
 /**
  * @brief Initialize the logger on the interface (depending of the define used)
  * @ingroup logger
  * @param[in] log_level Log level to output message
  */
-void logger_init(log_level_t log_level, const ip_addr_t* addr, const u16_t port)
+void logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
 {
     logger_log_level = log_level;
 	#if !defined(TEST)
@@ -37,8 +37,8 @@ void logger_init(log_level_t log_level, const ip_addr_t* addr, const u16_t port)
 	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
 
 	// Initialize UDP client
-	ip_addr_t  ip_addr = addr;
-	uint16_t dest_port = port;
+	*ip_addr = *addr;
+	dest_port = port;
 	init_ethernet();
 	udp_client_init();
 	#endif
