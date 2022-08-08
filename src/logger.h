@@ -71,7 +71,7 @@ typedef enum {
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
 
-extern void logger_init(log_level_t log_level);
+extern void logger_init(log_level_t log_level, const ip_addr_t* addr, const u16_t port);
 extern void logger_set_log_level(log_level_t log_level);
 extern void logger_set_log_interface(log_interface_t log_interface);
 extern char * log_buffer(uint8_t *p_buff, uint8_t buffer_length);

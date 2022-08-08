@@ -23,7 +23,7 @@ static ip_addr_t ipaddr;
  * @ingroup logger
  * @param[in] log_level Log level to output message
  */
-void logger_init(log_level_t log_level)
+void logger_init(log_level_t log_level, const ip_addr_t* addr, const u16_t port)
 {
     logger_log_level = log_level;
 	#if !defined(TEST)
@@ -37,7 +37,8 @@ void logger_init(log_level_t log_level)
 	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
 
 	// Initialize UDP client
-	IP4_ADDR(&ipaddr, RPI_IP_ADDR_A, RPI_IP_ADDR_B, RPI_IP_ADDR_C, RPI_IP_ADDR_D);
+	ip_addr_t  ip_addr = addr;
+	uint16_t dest_port = port;
 	init_ethernet();
 	udp_client_init();
 	#endif
@@ -154,7 +155,7 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 				}
 				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
 				{
-					udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ipaddr, RPI_PORT);
+					udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ip_addr, dest_port);
 				}
 			}
 		#elif defined(TEST)
