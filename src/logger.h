@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ip_addr.h"
+#include "serial_mdw.h"
 
 #if defined(TEST)
 #  include <stdint.h>
@@ -54,8 +55,9 @@ struct logger_state
 {
 	log_interface_t logger_log_interface;
 	log_level_t logger_log_level;
-	struct uart_rs232_options serial_options;
-	struct udp_dest_options udp_options;
+	usart_serial_options_t serial_options;
+	ip_addr_t* dest_ipaddr;
+	uint16_t dest_port;
 };
 
 // Define if you want to use a more verbose option
