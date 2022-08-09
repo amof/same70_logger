@@ -8,7 +8,7 @@
 // Ethernet includes
 #include "lib/network/udp_client/udp_client.h"
 
-static const uint8_t	LOGGER_SERIAL_DELAY = 0; // This parameter will influence greatly the behavior of the system because of the delay introduced
+static const uint8_t	LOGGER_UDP_DELAY = 100; // This parameter will influence greatly the behavior of the system because of the delay introduced
 static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
 static log_level_t logger_log_level = LOG_DEBUG;
 static log_interface_t logger_log_interface;
@@ -55,6 +55,7 @@ void udp_logger_init(log_level_t log_level, ip_addr_t * addr, u16_t port)
 	dest_port = port;
 	init_ethernet();
 	udp_client_init();
+	delay_ms(LOGGER_UDP_DELAY);
 }
 
 /**
@@ -177,8 +178,6 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 					// Send a return carriage + new line only when using serial link
 					char returnToTheLine_buffer[2] = { '\r', '\n' };
 					serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t*)returnToTheLine_buffer, (uint32_t)2);
-					
-					delay_ms(LOGGER_SERIAL_DELAY);
 				}
 				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
 				{
