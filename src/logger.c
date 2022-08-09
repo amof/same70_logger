@@ -18,6 +18,25 @@ static ip_addr_t*  ip_addr = 0;
 static uint16_t dest_port = 0;
 
 /**
+ * @brief Initialize the logger 
+ * @ingroup logger
+ */
+void logger_init(struct logger_state *logger_options)
+{
+	#if !defined(TEST)
+	// Initialize serial interface
+	if (logger_options->logger_log_interface == LOG_INTERFACE_SERIAL || logger_options->logger_log_interface == LOG_INTERFACE_BOTH) {
+		serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &(logger_options->serial_options), TIMESTAMP_USED);
+	}
+	// Initialize ethernet interface
+	if (logger_options->logger_log_interface == LOG_INTERFACE_ETHERNET || logger_options->logger_log_interface == LOG_INTERFACE_BOTH) {
+		udp_client_init();
+		delay_ms(LOGGER_UDP_DELAY);
+	}
+	#endif
+}
+
+/**
  * @brief Initialize the logger on the serial interface
  * @ingroup logger
  * @param[in] log_level Log level to output message
