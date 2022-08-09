@@ -1,7 +1,6 @@
 #include "logger.h"
 
 // Serial includes
-#include "sam_ethernet.h"
 #include "serial_mdw.h"
 #include "delay.h"
 
@@ -53,7 +52,6 @@ void udp_logger_init(log_level_t log_level, ip_addr_t * addr, u16_t port)
 
 	*ip_addr = *addr;
 	dest_port = port;
-	init_ethernet();
 	udp_client_init();
 	delay_ms(LOGGER_UDP_DELAY);
 }
