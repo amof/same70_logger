@@ -49,6 +49,15 @@ typedef enum {
    LOG_FATAL
 } log_level_t;
 
+// Logger choice and options 
+struct logger_state
+{
+	log_interface_t logger_log_interface;
+	log_level_t logger_log_level;
+	struct uart_rs232_options serial_options;
+	struct udp_dest_options udp_options;
+};
+
 // Define if you want to use a more verbose option
 #define ADVANCED_LOG
 // Define the buffer length
