@@ -15,8 +15,8 @@ static log_interface_t logger_log_interface;
 static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
-static ip_addr_t*  ip_addr;
-static uint16_t dest_port;
+static ip_addr_t*  ip_addr = 0;
+static uint16_t dest_port = 0;
 
 /**
  * @brief Initialize the logger on the serial interface
