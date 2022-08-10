@@ -9,84 +9,40 @@
 
 static const uint8_t	LOGGER_UDP_DELAY = 100; // This parameter will influence greatly the behavior of the system because of the delay introduced
 static const uint32_t	LOGGER_SERIAL_SPEED = 115200ul;
-static log_level_t logger_log_level = LOG_DEBUG;
-static log_interface_t logger_log_interface;
 static const char *level_names[] = {
 	"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
-static ip_addr_t*  ip_addr = 0;
-static uint16_t dest_port = 0;
+struct logger_state* logger;
 
 /**
  * @brief Initialize the logger 
  * @ingroup logger
  */
-void logger_init(struct logger_state *logger_options)
+void logger_init()
 {
-	#if !defined(TEST)
-	// Initialize serial interface
-	if (logger_options->logger_log_interface == LOG_INTERFACE_SERIAL || logger_options->logger_log_interface == LOG_INTERFACE_BOTH) {
-		serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &(logger_options->serial_options), TIMESTAMP_USED);
-	}
-	// Initialize ethernet interface
-	if (logger_options->logger_log_interface == LOG_INTERFACE_ETHERNET || logger_options->logger_log_interface == LOG_INTERFACE_BOTH) {
-		udp_client_init();
-		delay_ms(LOGGER_UDP_DELAY);
-	}
-	#endif
-}
+	logger = (struct logger_state*)mem_malloc(sizeof(struct logger_state));
 
-/**
- * @brief Initialize the logger on the serial interface
- * @ingroup logger
- * @param[in] log_level Log level to output message
- */
-void serial_logger_init(log_level_t log_level)
-{
-	logger_log_interface = LOG_INTERFACE_SERIAL;
-    logger_log_level = log_level;
-	#if !defined(TEST)
-	// Initialize serial interface
-	const usart_serial_options_t serial_option = {
+	logger->logger_log_interface = LOG_INTERFACE_BOTH;
+	logger->logger_log_level = LOG_DEBUG;
+	logger->serial_options = (usart_serial_options_t){
 		.baudrate = LOGGER_SERIAL_SPEED,
 		.charlength = US_MR_CHRL_8_BIT,
 		.paritytype = US_MR_PAR_NO,
 		.stopbits = US_MR_NBSTOP_1_BIT
 	};
-	serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &serial_option, TIMESTAMP_USED);
+	logger->dest_port = 10000;
+	IP4_ADDR(&(logger->dest_ipaddr), RPI_IP_ADDR_A, RPI_IP_ADDR_B, RPI_IP_ADDR_C, RPI_IP_ADDR_D);
+
+	#if !defined(TEST)
+	// Initialize serial interface
+	if (logger->logger_log_interface == LOG_INTERFACE_SERIAL || logger->logger_log_interface == LOG_INTERFACE_BOTH) {
+		serial_mdw_init_interface(LOGGER_SERIAL_INTERFACE, &(logger->serial_options), TIMESTAMP_USED);
+	}
+	// Initialize ethernet interface
+	if (logger->logger_log_interface == LOG_INTERFACE_ETHERNET || logger->logger_log_interface == LOG_INTERFACE_BOTH) {
+		udp_client_init();
+	}
 	#endif
-}
-
-/**
-*@brief Initialize the logger on the UDP interface
-* @ingroup logger
-* @param[in] log_level Log level to output message
-* @param[in] addr Destination IP adress
-* @param[in] port Destination port
-*/
-void udp_logger_init(log_level_t log_level, ip_addr_t * addr, u16_t port)
-{
-	logger_log_interface = LOG_INTERFACE_ETHERNET;
-	logger_log_level = log_level;
-
-	*ip_addr = *addr;
-	dest_port = port;
-	udp_client_init();
-	delay_ms(LOGGER_UDP_DELAY);
-}
-
-/**
-*@brief Initialize the logger on both interfaces
-* @ingroup logger
-* @param[in] log_level Log level to output message
-* @param[in] addr Destination IP adress
-* @param[in] port Destination port
-*/
-void both_logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
-{
-	serial_logger_init(log_level);
-	udp_logger_init(log_level, &addr, port);
-	logger_log_interface = LOG_INTERFACE_BOTH;
 }
 
 /**
@@ -96,7 +52,7 @@ void both_logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port)
  */
 void logger_set_log_level(log_level_t log_level)
 {
-	logger_log_level = log_level;
+	logger->logger_log_level = log_level;
 }
 
 /**
@@ -106,7 +62,7 @@ void logger_set_log_level(log_level_t log_level)
  */
 uint8_t logger_get_log_level(void)
 {
-	return logger_log_level;
+	return logger->logger_log_level;
 }
 
 /**
@@ -116,7 +72,7 @@ uint8_t logger_get_log_level(void)
  */
 void logger_set_log_interface(log_interface_t log_interface)
 {
-	logger_log_interface = log_interface;
+	logger->logger_log_interface = log_interface;
 }
 
 /**
@@ -154,7 +110,7 @@ char * log_buffer(uint8_t *p_buff, uint8_t buffer_length)
  */
 void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt, ...)
 {
-	if (level >= logger_log_level )
+	if (level >= logger->logger_log_level)
 	{
 		int length = 0;
 		char buffer [LOGGER_MESSAGE_MAX_LENGTH] ={0};
@@ -189,16 +145,17 @@ void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt
 
 		#if !defined(TEST)
 			if (length >= 0) {
-				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_SERIAL || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
+				if (logger->logger_log_interface == (log_interface_t)LOG_INTERFACE_SERIAL || logger->logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
 				{
 					serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t*)buffer, (uint32_t)length);
 					// Send a return carriage + new line only when using serial link
 					char returnToTheLine_buffer[2] = { '\r', '\n' };
 					serial_mdw_send_bytes(LOGGER_SERIAL_INTERFACE, (uint8_t*)returnToTheLine_buffer, (uint32_t)2);
 				}
-				if (logger_log_interface == (log_interface_t)LOG_INTERFACE_ETHERNET || logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
+				if (logger->logger_log_interface == (log_interface_t)LOG_INTERFACE_ETHERNET || logger->logger_log_interface == (log_interface_t)LOG_INTERFACE_BOTH)
 				{
-					udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &ip_addr, dest_port);
+					udp_client_send_to((uint8_t*)buffer, (uint32_t)length, &(logger->dest_ipaddr), logger->dest_port);
+
 				}
 			}
 		#elif defined(TEST)

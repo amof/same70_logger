@@ -56,7 +56,7 @@ struct logger_state
 	log_interface_t logger_log_interface;
 	log_level_t logger_log_level;
 	usart_serial_options_t serial_options;
-	ip_addr_t* dest_ipaddr;
+	ip_addr_t dest_ipaddr;
 	uint16_t dest_port;
 };
 
@@ -82,7 +82,7 @@ struct logger_state
 #define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-extern void logger_init(struct logger_state *logger_options);
+extern void logger_init();
 extern void serial_logger_init(log_level_t log_level);
 extern void udp_logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port);
 extern void both_logger_init(log_level_t log_level, ip_addr_t* addr, u16_t port);
