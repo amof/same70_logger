@@ -18,20 +18,15 @@ struct logger_state* logger;
  * @brief Initialize the logger 
  * @ingroup logger
  */
-void logger_init()
+void logger_init(struct logger_state logger_options)
 {
 	logger = (struct logger_state*)mem_malloc(sizeof(struct logger_state));
 
-	logger->logger_log_interface = LOG_INTERFACE_BOTH;
-	logger->logger_log_level = LOG_DEBUG;
-	logger->serial_options = (usart_serial_options_t){
-		.baudrate = LOGGER_SERIAL_SPEED,
-		.charlength = US_MR_CHRL_8_BIT,
-		.paritytype = US_MR_PAR_NO,
-		.stopbits = US_MR_NBSTOP_1_BIT
-	};
-	logger->dest_port = 10000;
-	IP4_ADDR(&(logger->dest_ipaddr), RPI_IP_ADDR_A, RPI_IP_ADDR_B, RPI_IP_ADDR_C, RPI_IP_ADDR_D);
+	logger->logger_log_interface = logger_options.logger_log_interface;
+	logger->logger_log_level = logger_options.logger_log_level;
+	logger->serial_options = logger_options.serial_options;
+	logger->dest_port = logger_options.dest_port;
+	logger->dest_ipaddr = logger_options.dest_ipaddr;
 
 	#if !defined(TEST)
 	// Initialize serial interface
