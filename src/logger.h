@@ -5,6 +5,7 @@
  *  @brief Logger library
  *         Based on rxi library: https://github.com/rxi/log.c/
  *         Use macros (log_x) to use this logger.
+ *         /!\ You have to initialize yourself the link you want to use.
  *  @date 2019-03-22
  *  @author Julien DELVAUX <delvaux.ju@gmail.com>
  *  @copyright MIT license
@@ -17,6 +18,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "ip_addr.h"
+#include "status_codes.h"
+#include "uart_serial.h"
 
 #if defined(TEST)
 #  include <stdint.h>
@@ -70,12 +74,61 @@ typedef enum {
 #define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-
-extern void logger_init(log_level_t log_level);
+/**
+ * @brief Initialize the logger 
+ * @ingroup logger
+ */
+extern void logger_init(log_interface_t log_interface);
+/**
+ * @brief Set the UDP server destination of the logs
+ * @ingroup logger
+ * 
+ * @param addr Address of the server
+ * @param port Port of the server
+ */
+extern void logger_set_udp_server(ip_addr_t* addr, u16_t port);
+/**
+ * @brief Set the output serial link
+ * @ingroup logger
+ * 
+ * @param usart 
+ */
+extern void logger_set_serial_link(usart_if usart);
+/**
+ * @brief Change the log level
+ * @ingroup logger
+ * @param[in] log_level_t
+ */
 extern void logger_set_log_level(log_level_t log_level);
+/**
+ * @brief Return the current log level
+ * @ingroup logger
+ * @param[out] log_level_t
+ */
+extern log_level_t logger_get_log_level(void);
+/**
+ * @brief Change the interface to output logs
+ * @ingroup logger
+ * @param[in] log_level_t 
+ */
 extern void logger_set_log_interface(log_interface_t log_interface);
+/**
+ * @brief Convert a uint8_t buffer into decimal character
+ * @ingroup logger
+ * @param[in] p_buff Pointer to the buffer of data
+ * @param[in] buffer_length Length of the buffer
+ * @return char* String of characters
+ */
 extern char * log_buffer(uint8_t *p_buff, uint8_t buffer_length);
+/**
+ * @brief Generate the log message and send it to the interface defined
+ * 
+ * @param level 
+ * @param file 
+ * @param line 
+ * @param fmt 
+ * @param ... 
+ */
 extern void log_log(log_level_t level, const char *file, uint32_t line, const char *fmt, ...) __attribute__ ((format (gnu_printf, 4, 5)));
-extern uint8_t logger_get_log_level(void);
 
 #endif /* LOGGER_H_ */
