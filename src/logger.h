@@ -88,13 +88,6 @@ extern void logger_init(log_interface_t log_interface);
  */
 extern void logger_set_udp_server(ip_addr_t* addr, u16_t port);
 /**
- * @brief Set the output serial link
- * @ingroup logger
- * 
- * @param usart 
- */
-extern void logger_set_serial_link(usart_if usart);
-/**
  * @brief Change the log level
  * @ingroup logger
  * @param[in] log_level_t
